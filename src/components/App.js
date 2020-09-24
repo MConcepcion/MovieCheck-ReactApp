@@ -1,86 +1,118 @@
-import React, { Component } from 'react';
-import MovieBox from "./_MovieBox";
+import React, { useState, useEffect } from 'react';
+import { FaGreaterThan, FaLessThan, FaWindowClose } from 'react-icons/fa';
 import '../css/App.css';
 
-const fetchBaseUrl = "https://api.themoviedb.org/3/movie/popular?api_key=fb80ed66f8635a5862c804e276096e03&language=en-US&page=";
-var pageNumber = 1;
-var fetchFullUrl = `${fetchBaseUrl}${pageNumber}`;
+const App = () => {
 
-class App extends Component {
-  constructor() {
-    super();
-    this.state = {
-      movieBoxArr: [],
-      movieTitle: '',
-      movieRelDate: '',
-      movieDesc: '',
-      movieVoteAvg: 0,
-    };
+  const [pageNumber, setPageNumber] = useState(1);
+  const [totalPageNumber, setTotalPageNumber] = useState(2);
+  const [movieData, setMovieData] = useState([]);
+  const [movieTitle, setMovieTitle] = useState("");
+  const [movieImage, setMovieImage] = useState("");
+  const [movieOverview, setMovieOverview] = useState("");
+  const [detailView, setDetailView] = useState("");
+  const [blurry, setBlurry] = useState("");
+
+  const fetchBaseUrl = "https://api.themoviedb.org/3/movie/popular?api_key=fb80ed66f8635a5862c804e276096e03&language=en-US&page=";
+  const imagePosterPathBaseUrl = "http://image.tmdb.org/t/p/w300";
+
+  /**************************************************************************
+   * This fetches the initial page of movies.
+   * Every time the user clicks on the "prev page" and "next page" icons, 
+   * the "pageNumber" state prop is decremented or incremented, respectively, 
+   * then fetches the new page of movies.
+   ************************************************************************ */
+  useEffect( () => { 
+    const fetchMovieData = () => {
+      let fetchFullUrl = fetchBaseUrl + pageNumber;
+      fetch(fetchFullUrl)
+        .then( response => response.json() )
+        .then( result => { 
+          console.log(result);
+          setPageNumber(result['page']);
+          setMovieData(result['results']);
+          setTotalPageNumber(result['total_pages']);
+        });
+    }
+    fetchMovieData();
+  }, [pageNumber]);
+
+  function populateMovieDetails(title, imagePath, description) {
+    setMovieTitle(title);
+    setMovieImage(imagePosterPathBaseUrl + imagePath);
+    setMovieOverview(description);
   }
 
-  /* ****************************************************************
-   * TO DO: I was aware that it would be better to pass the movie
-   *        details through the component, but for expediency,
-   *        I currently have the method just use the movie ID
-   *        and remap the movieBoxArr[].
-   *        I will pass the necessary data through the method later.
-   */
-  showMovieDetails( movieId ) {
-          // App.setState({
-          //   movieTitle: data['title'],
-          //   movieRelDate: data['release_date'],
-          //   movieDesc: data['overview'],
-          //   movieVoteAvg: data['vote_average']
-        // })
-      // });
-    console.log( movieId + " Clicked!");
+  function makeDetailsVisible() {
+    setDetailView("show-details");
+    setBlurry("blurred-out");
   }
 
-  /* ***************************************************************
-   * componentDidMount method fetches first page of MovieDB data
-   * upon loading the page
-   */
-  componentDidMount() {
-    fetch(`${fetchFullUrl}`)
-      .then(response => response.json())
-      .then(data => {
-        const movies = data['results'].map(item => { return item; })
-        this.setState({movieBoxArr: movies});
-        pageNumber = data['page'];
-        console.log(`Page number: ${pageNumber}`);
-    });
+  function makeDetailsHidden() {
+    setDetailView("");
+    setBlurry("");
   }
 
-  render() {
-    return (
-      <div className="app-container">
+  function pageCountDown() {
+    let newPageNumber = pageNumber - 1;
+    // console.log(newPageNumber)
+    setPageNumber(newPageNumber);
+  }
+
+  function pageCountUp() {
+    let newPageNumber = pageNumber + 1;
+    // console.log(newPageNumber);
+    return setPageNumber(newPageNumber);
+  }
+
+  return (
+    <>
+      <div className={`movie-details-box ${detailView}`}
+        onClick={() => { detailView === "" ? makeDetailsVisible() : makeDetailsHidden(); }}>
+        <div className="movie-details">
+          <img src={movieImage} alt={movieTitle} />
+          <div className="movie-details-desc">
+            <button>
+              <FaWindowClose />
+            </button>
+            <h2>{movieTitle}</h2>
+            <p>{movieOverview}</p>
+          </div>
+        </div>
+      </div>
+      <div className={`app-container ${blurry}`}>
         <header>
           <h1>Welcome to<br />MovieCheck</h1>
+          <p>Check out the details on the latest, most popular movie releases available in theaters, on digital release, and more!</p>
         </header>
-        {/* TO DO: This is supposed to be the div where the movie details should have ended up.
-          *        The div was supposed to be loaded as invisible and floating above the
-          *        Movie Box Grid, and populates the state properties on-click, then displays
-          *        the content.
-          */}
-        <div className="movie-details-display">
-          <p>
-            {this.state.movieTitle}<br />
-            {this.state.movieRelDate}<br />
-            {this.state.movieDesc}<br />
-            {this.state.movieVoteAvg}
-          </p>
+        <div className="page-nav">
+          <button onClick={() => { pageCountDown(); }} disabled={pageNumber === 1 ? true : false}><FaLessThan /></button>
+          &nbsp;&nbsp;<span>Page {pageNumber}</span>&nbsp;&nbsp;
+          <button onClick={() => { pageCountUp(); }} disabled={pageNumber === totalPageNumber ? true : false}><FaGreaterThan /></button>
         </div>
-        <div className="movie-box-grid">
-          <MovieBox 
-            movieBoxArr={this.state.movieBoxArr} 
-          />
+        <div className="poster-box-grid">
+          {movieData.map(item => { return(
+          <div className="poster-box" key={item.id} onClick={() => {
+              populateMovieDetails(item.title, item.poster_path, item.overview);
+              makeDetailsVisible();}}>
+            <img src={`${imagePosterPathBaseUrl}${item.poster_path}`} alt={item.title} title={item.title} />
+            <h2>{item.title}</h2>
+            {/* <p>{item.overview}</p> */}
+          </div>
+          )})}
+        </div>
+        <div className="page-nav">
+          <button onClick={() => { pageCountDown(); }} disabled={pageNumber === 1 ? true : false}><FaLessThan /></button>
+          &nbsp;&nbsp;<span>Page {pageNumber}</span>&nbsp;&nbsp;
+          <button onClick={() => { pageCountUp(); }}><FaGreaterThan /></button>
         </div>
         <footer>
           <p>Powered by The Movie Database &ndash; <a href="https://themoviedb.org">TheMovieDB.org</a></p>
         </footer>
       </div>
-    )
-  }
+    </>
+  )
+
 };
 
 export default App;
