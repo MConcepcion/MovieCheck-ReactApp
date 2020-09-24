@@ -4,31 +4,35 @@ import '../css/App.css';
 
 const App = () => {
 
+  // State variables for page traversal
   const [pageNumber, setPageNumber] = useState(1);
-  const [totalPageNumber, setTotalPageNumber] = useState(2);
+  const [totalPageNumber, setTotalPageNumber] = useState(2); // default set to 2 for testing "next page" button disable functionality
+  // State variables used to populate movie data
   const [movieData, setMovieData] = useState([]);
   const [movieTitle, setMovieTitle] = useState("");
   const [movieImage, setMovieImage] = useState("");
   const [movieOverview, setMovieOverview] = useState("");
+  // State variables used for CSS-related events
   const [detailView, setDetailView] = useState("");
   const [blurry, setBlurry] = useState("");
 
+  // URL prefixes for data fetch and movie poster images
   const fetchBaseUrl = "https://api.themoviedb.org/3/movie/popular?api_key=fb80ed66f8635a5862c804e276096e03&language=en-US&page=";
   const imagePosterPathBaseUrl = "http://image.tmdb.org/t/p/w300";
 
   /**************************************************************************
-   * This fetches the initial page of movies.
+   * This useEffect() hook fetches the initial page of movies.
    * Every time the user clicks on the "prev page" and "next page" icons, 
    * the "pageNumber" state prop is decremented or incremented, respectively, 
    * then fetches the new page of movies.
-   ************************************************************************ */
+   */
   useEffect( () => { 
     const fetchMovieData = () => {
       let fetchFullUrl = fetchBaseUrl + pageNumber;
       fetch(fetchFullUrl)
         .then( response => response.json() )
         .then( result => { 
-          console.log(result);
+          // console.log(result);
           setPageNumber(result['page']);
           setMovieData(result['results']);
           setTotalPageNumber(result['total_pages']);
@@ -37,12 +41,31 @@ const App = () => {
     fetchMovieData();
   }, [pageNumber]);
 
+  /************************************************************************
+   * After the user clicks on a movie poster in the list, the movie's
+   * title, the URL for the movie's poster, and the movie's overview
+   * is passed into this function so the state values can be populated
+   * with movie data and, in turn, populate the Movie Details modal window
+   * with details about the selected movie.
+   */
   function populateMovieDetails(title, imagePath, description) {
     setMovieTitle(title);
     setMovieImage(imagePosterPathBaseUrl + imagePath);
     setMovieOverview(description);
   }
 
+  /************************************************************************
+   * This function is triggered when a user clicks on a movie poster to 
+   * reveal the movie's details.
+   * setDetailView() adds the "show-details" class name to the
+   * "movie-details-box" DIV to switch the "display" CSS property
+   * from "none" to "block".
+   * setBlurry() adds the "blurred-out" class name to the "app-container"
+   * DIV to blur out the app while the modal window is visible.
+   * 
+   * The makeDetailsHidden() function below toggles the "show-details"
+   * visibility and the background blur.
+   */
   function makeDetailsVisible() {
     setDetailView("show-details");
     setBlurry("blurred-out");
@@ -53,6 +76,12 @@ const App = () => {
     setBlurry("");
   }
 
+  /************************************************************************
+   * pageCountDown() and pageCountUp() are functions used to increment
+   * and decrement, respectively, the page number used in the query URL.
+   * When the user clicks on the "<" or ">" buttons, the pageNumber state
+   * value changes, and the app fetches the list of movies for the page.
+   */
   function pageCountDown() {
     let newPageNumber = pageNumber - 1;
     // console.log(newPageNumber)
@@ -65,6 +94,12 @@ const App = () => {
     return setPageNumber(newPageNumber);
   }
 
+  /***********************************************************************
+   * Render block
+   * 
+   * TO DO: Cleanup the page sections into separate component files.
+   *        (Header, MovieDetailsBox, PageNavigation, MovieBox, Footer)
+   */
   return (
     <>
       <div className={`movie-details-box ${detailView}`}
